@@ -6,6 +6,7 @@ from phi.tools.yfinance import YFinanceTools
 from phi.tools.duckduckgo import DuckDuckGo
 import os
 import tools # Import our custom tools
+from fastapi.middleware.cors import CORSMiddleware
 
 # --- CONFIGURATION ---
 # Get your Free API Key from: https://console.groq.com/keys
@@ -14,6 +15,13 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins (v0, localhost, etc.)
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 # --- DEFINE THE AGENT ---
 # We create a function to get a fresh agent with specific scope
 def get_scoped_agent(ticker: str, market: str, context: str = ""):
