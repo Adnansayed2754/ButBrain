@@ -37,13 +37,16 @@ def get_scoped_agent(ticker: str, market: str, context: str = ""):
         f"CONTEXT FROM SYSTEM: {context}" 
     ]
     
-    return Agent(
-        model=Groq(id="llama3-70b-8192", api_key=GROQ_API_KEY),
-        tools=[YFinanceTools(stock_price=True, company_info=True), DuckDuckGo()],
-        instructions=instructions,
-        show_tool_calls=True,
-        markdown=True,
-    )
+   return Agent(
+    model=Groq(id="llama3-70b-8192", api_key=GROQ_API_KEY),
+    tools=[
+        YFinanceTools(stock_price=True, company_info=True),
+        ExaTools(api_key=os.getenv("EXA_API_KEY")) # The New Brain
+    ],
+    instructions=instructions,
+    show_tool_calls=True,
+    markdown=True,
+)
 
 # --- DATA MODELS ---
 class Scope(BaseModel):
