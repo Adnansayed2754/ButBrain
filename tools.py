@@ -5,8 +5,8 @@ import os
 from exa_py import Exa
 
 # --- INITIALIZE EXA ---
-# Ensure EXA_API_KEY is set in your Render Environment Variables
 try:
+    # We initialize it once here to use everywhere
     exa = Exa(api_key=os.getenv("EXA_API_KEY"))
 except Exception as e:
     print(f"Exa Initialization Warning: {e}")
@@ -50,11 +50,12 @@ def get_expert_metrics(symbol: str):
         print(f"Metrics Error: {e}")
         return {"error": str(e)}
 
-# --- 2. The Deep Analysis Tool (Powered by Exa.ai) ---
+# --- 2. The Deep Analysis Tool ---
 def perform_deep_scan(symbol: str):
+    """Scans 2 years of data for anomalies and uses Exa to find reasons."""
     try:
         if not exa:
-            return [{"date": "Error", "type": "Config", "possible_cause": "EXA_API_KEY missing in Render"}]
+            return [{"date": "Error", "type": "Config", "possible_cause": "EXA_API_KEY missing"}]
 
         ticker = yf.Ticker(symbol)
         hist = ticker.history(period="2y")
@@ -73,31 +74,28 @@ def perform_deep_scan(symbol: str):
             move_type = "SPIKE" if row['Pct_Change'] > 0 else "CRASH"
             date_str = date.strftime('%Y-%m-%d')
             
-            # --- EXA NEURAL SEARCH ---
+            # --- FIXED EXA SEARCH ---
             try:
-                # We ask Exa specifically for the "reason" or "news"
-                query = f"Why did {symbol} stock {move_type} on {date_str}? Financial news analysis."
+                query = f"Why did {symbol} stock {move_type} on {date_str}? Financial news."
                 
-                # Exa "search_and_contents" gets us the text without clicking links
+                # REMOVED 'use_autoprompt' to fix the error
                 result = exa.search_and_contents(
                     query,
-                    type="neural",       # "Neural" understands meaning, not just keywords
-                    use_autoprompt=True, # Exa optimizes your query automatically
+                    type="neural",
                     num_results=1,
-                    text=True            # We want the actual article text
+                    text=True
                 )
                 
                 if result.results:
-                    # We take the first 300 chars of the article as the snippet
                     raw_text = result.results[0].text
                     news_snippet = raw_text[:300] + "..." if raw_text else "Content unavailable."
                 else:
-                    news_snippet = "No clear financial news found for this specific date."
+                    news_snippet = "No clear financial news found."
                     
             except Exception as e:
-                print(f"Exa Search Error: {e}")
-                news_snippet = "Search failed (Check Logs)."
-            # ---------------------------
+                print(f"Exa Search Error for {date_str}: {e}")
+                news_snippet = "Search failed."
+            # ------------------------
 
             events_log.append({
                 "date": date_str,
@@ -111,3 +109,31 @@ def perform_deep_scan(symbol: str):
     except Exception as e:
         print(f"Deep Scan Error: {e}")
         return []
+
+# --- 3. NEW: Custom Search Tool for the Agent ---
+def agent_search_tool(query: str) -> str:
+    """
+    Use this tool to search the web for live financial news and information.
+    Args:
+        query (str): The question or topic to search for.
+    """
+    try:
+        if not exa:
+            return "Search unavailable (API Key missing)."
+            
+        # The Agent uses this simple function instead of the broken ExaTools wrapper
+        result = exa.search_and_contents(
+            query,
+            type="neural",
+            num_results=3,
+            text=True
+        )
+        
+        # Format results nicely for the Agent to read
+        response = ""
+        for item in result.results:
+            response += f"--- Source: {item.title} ---\n{item.text[:500]}...\n\n"
+            
+        return response if response else "No results found."
+    except Exception as e:
+        return f"Search failed: {str(e)}"
