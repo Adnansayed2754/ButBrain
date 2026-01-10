@@ -7,6 +7,7 @@ from phi.tools.duckduckgo import DuckDuckGo
 import os
 import tools # Import our custom tools
 from fastapi.middleware.cors import CORSMiddleware
+from phi.tools.exa import ExaTools
 
 # --- CONFIGURATION ---
 # Get your Free API Key from: https://console.groq.com/keys
