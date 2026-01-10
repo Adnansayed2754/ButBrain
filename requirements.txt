@@ -9,3 +9,4 @@ pydantic
 scipy
 groq
 duckduckgo-search==6.3.2
+exa-py
